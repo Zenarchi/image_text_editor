@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Automatic Image Text Editor</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #f0f2f5;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
+            min-height: 100vh;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .container {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            width: 100%;
+            max-width: 1200px;
+            background-color: #ffffff;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+            padding: 24px;
+        }
+        .controls {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            min-width: 150px;
+        }
+        .control-group label {
+            font-weight: 600;
+            color: #333;
+            font-size: 0.9rem;
+        }
+        .control-group input[type="text"],
+        .control-group input[type="number"],
+        .control-group input[type="color"],
+        .control-group select {
+            padding: 10px 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 1rem;
+            color: #374151;
+            background-color: #f9fafb;
+            transition: border-color 0.2s;
+        }
+        .control-group input:focus,
+        .control-group select:focus {
+            outline: none;
+            border-color: #3b82f6;
+            box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+        }
+        .button-group {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: flex-end;
+        }
+        .btn {
+            padding: 10px 20px;
+            border-radius: 8px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        .btn-primary {
+            background-color: #3b82f6;
+            color: #ffffff;
+        }
+        .btn-primary:hover {
+            background-color: #2563eb;
+            transform: translateY(-1px);
+        }
+        .btn-secondary {
+            background-color: #e5e7eb;
+            color: #374151;
+        }
+        .btn-secondary:hover {
+            background-color: #d1d5db;
+            transform: translateY(-1px);
+        }
+        .btn-danger {
+            background-color: #ef4444;
+            color: #ffffff;
+        }
+        .btn-danger:hover {
+            background-color: #dc2626;
+            transform: translateY(-1px);
+        }
+        .image-display {
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: #f9fafb;
+            min-height: 400px;
+            position: relative; /* For loading overlay */
+        }
+        .image-display img {
+            max-width: 100%;
+            height: auto;
+            display: block;
+            border-radius: 8px;
+        }
+        .message-box {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: #333;
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            z-index: 1000;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+        .message-box.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 50;
+            font-size: 1.2rem;
+            color: #3b82f6;
+            font-weight: 600;
+            border-radius: 8px;
+            display: none; /* Hidden by default */
+        }
+        .loading-overlay.show {
+            display: flex;
+        }
+
+        /* Responsive adjustments */
+        @media (min-width: 768px) {
+            .container {
+                flex-direction: row;
+                align-items: flex-start;
+            }
+            .controls-panel {
+                flex: 0 0 300px;
+                padding-right: 24px;
+                border-right: 1px solid #e0e0e0;
+                border-bottom: none;
+            }
+            .image-area {
+                flex: 1;
+                padding-left: 24px;
+            }
+            .controls {
+                flex-direction: column;
+                flex-wrap: nowrap;
+                border-bottom: none;
+            }
+            .button-group {
+                flex-direction: column;
+                align-items: stretch;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="controls-panel">
+            <h2 class="text-2xl font-bold text-gray-800 mb-6">Image Text Editor (Python Backend)</h2>
+
+            <div class="controls">
+                <div class="control-group">
+                    <label for="imageUpload">Upload Image:</label>
+                    <input type="file" id="imageUpload" accept="image/*" class="p-2 border rounded-md">
+                </div>
+
+                <div class="control-group">
+                    <label for="textInput">Text:</label>
+                    <input type="text" id="textInput" value="Your Text Here" placeholder="Enter text">
+                </div>
+
+                <div class="control-group">
+                    <label for="fontSize">Font Size:</label>
+                    <input type="number" id="fontSize" value="60" min="10" max="200">
+                </div>
+
+                <div class="control-group">
+                    <label for="fontColor">Font Color:</label>
+                    <input type="color" id="fontColor" value="#000000">
+                </div>
+
+                <div class="control-group">
+                    <label for="fontFamily">Font Style:</label>
+                    <select id="fontFamily">
+                        <option value="arial.ttf">Arial</option>
+                        <option value="verdana.ttf">Verdana</option>
+                        <option value="times.ttf">Times New Roman</option>
+                        <!-- Note: These font files must exist on your server or be system fonts -->
+                        <!-- You might need to provide .ttf files in a 'fonts' directory next to app.py -->
+                    </select>
+                </div>
+
+                <div class="button-group">
+                    <button id="processImageBtn" class="btn btn-primary">Process Image</button>
+                    <button id="clearCanvasBtn" class="btn btn-danger">Clear All</button>
+                    <button id="downloadImageBtn" class="btn btn-secondary" disabled>Download Image</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="image-area flex-1 flex flex-col items-center justify-center">
+            <div class="image-display w-full">
+                <img id="processedImage" src="https://placehold.co/600x400/e0e0e0/888?text=Upload+Image" alt="Processed Image">
+                <div id="loadingOverlay" class="loading-overlay">
+                    Processing image...
+                </div>
+            </div>
+            <p class="text-sm text-gray-600 mt-4 text-center">
+                Upload an image, enter text, and click "Process Image". The text will be automatically placed behind any detected person.
+            </p>
+        </div>
+    </div>
+
+    <div id="messageBox" class="message-box"></div>
+
+    <script>
+        const imageUpload = document.getElementById('imageUpload');
+        const textInput = document.getElementById('textInput');
+        const fontSizeInput = document.getElementById('fontSize');
+        const fontColorInput = document.getElementById('fontColor');
+        const fontFamilySelect = document.getElementById('fontFamily');
+        const processImageBtn = document.getElementById('processImageBtn');
+        const clearCanvasBtn = document.getElementById('clearCanvasBtn');
+        const downloadImageBtn = document.getElementById('downloadImageBtn');
+        const processedImage = document.getElementById('processedImage');
+        const messageBox = document.getElementById('messageBox');
+        const loadingOverlay = document.getElementById('loadingOverlay');
+
+        let currentProcessedImageUrl = ''; // To store the URL of the processed image for download
+
+        function showMessage(message, duration = 3000) {
+            messageBox.textContent = message;
+            messageBox.classList.add('show');
+            setTimeout(() => {
+                messageBox.classList.remove('show');
+            }, duration);
+        }
+
+        processImageBtn.addEventListener('click', async () => {
+            const imageFile = imageUpload.files[0];
+            if (!imageFile) {
+                showMessage('Please upload an image first.');
+                return;
+            }
+
+            loadingOverlay.classList.add('show'); // Show loading indicator
+            processImageBtn.disabled = true; // Disable button during processing
+
+            const formData = new FormData();
+            formData.append('image', imageFile);
+            formData.append('text', textInput.value);
+            formData.append('fontSize', fontSizeInput.value);
+            formData.append('fontColor', fontColorInput.value);
+            formData.append('fontFamily', fontFamilySelect.value);
+
+            try {
+                const response = await fetch('/process_image', {
+                    method: 'POST',
+                    body: formData,
+                });
+
+                if (response.ok) {
+                    const blob = await response.blob();
+                    currentProcessedImageUrl = URL.createObjectURL(blob);
+                    processedImage.src = currentProcessedImageUrl;
+                    downloadImageBtn.disabled = false;
+                    showMessage('Image processed successfully!');
+                } else {
+                    const errorData = await response.json();
+                    showMessage(`Error: ${errorData.error || 'Something went wrong.'}`, 5000);
+                    console.error('Backend error:', errorData);
+                }
+            } catch (error) {
+                showMessage('Network error or server unavailable. Please try again.', 5000);
+                console.error('Fetch error:', error);
+            } finally {
+                loadingOverlay.classList.remove('show'); // Hide loading indicator
+                processImageBtn.disabled = false; // Re-enable button
+            }
+        });
+
+        clearCanvasBtn.addEventListener('click', () => {
+            processedImage.src = "https://placehold.co/600x400/e0e0e0/888?text=Upload+Image";
+            imageUpload.value = ''; // Clear file input
+            textInput.value = 'Your Text Here';
+            fontSizeInput.value = '60';
+            fontColorInput.value = '#000000';
+            fontFamilySelect.value = 'arial.ttf';
+            downloadImageBtn.disabled = true;
+            currentProcessedImageUrl = '';
+            showMessage('Cleared. Upload a new image!');
+        });
+
+        downloadImageBtn.addEventListener('click', () => {
+            if (currentProcessedImageUrl) {
+                const link = document.createElement('a');
+                link.download = 'edited-image.png';
+                link.href = currentProcessedImageUrl;
+                document.body.appendChild(link); // Required for Firefox
+                link.click();
+                document.body.removeChild(link); // Clean up
+                showMessage('Image downloaded!');
+            } else {
+                showMessage('No image to download. Please process an image first.');
+            }
+        });
+    </script>
+</body>
+</html>
